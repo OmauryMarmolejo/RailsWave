@@ -1,0 +1,9 @@
+<h1>Welcome to My Blog</h1>
+
+<% @posts.each do |post| %>
+  <div>
+    <h2><%= post.title %></h2>
+    <p><%= truncate(post.content, length: 100) %></p>
+    <%= link_to 'Read More', post_path(post) %>
+  </div>
+<% end %>
