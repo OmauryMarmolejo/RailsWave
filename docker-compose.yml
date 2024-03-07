@@ -6,8 +6,9 @@ services:
       context: .
       dockerfile: Dockerfile
     image: rails_wave
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -b '0.0.0.0'"
     volumes:
-      - .:/rails
+      - .:/app
     ports:
       - "3000:3000"
     depends_on:
