@@ -32,7 +32,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   family             = "my-ecs-task"
   network_mode       = "awsvpc"
   execution_role_arn = "arn:aws:iam::344974554678:role/ecsTaskExecutionRole"
-  cpu                = 128
+  cpu                = "512"
+  memory             = "1024"
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -42,8 +43,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     {
       name      = "dockergs"
       image     = "#${module.railswave_repository.repository_url}:latest"
-      cpu       = 128
-      memory    = 128
+      cpu       = 512
+      memory    = 1024
       essential = true
       portMappings = [
         {
