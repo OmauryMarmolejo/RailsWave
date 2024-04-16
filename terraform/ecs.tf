@@ -28,10 +28,11 @@ resource "aws_ecs_cluster_capacity_providers" "example" {
 }
 
 resource "aws_ecs_task_definition" "ecs_task_definition" {
+  #TODO: Remove task definition name from here
   family             = "my-ecs-task"
   network_mode       = "awsvpc"
   execution_role_arn = "arn:aws:iam::344974554678:role/ecsTaskExecutionRole"
-  cpu                = 256
+  cpu                = 128
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -41,8 +42,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     {
       name      = "dockergs"
       image     = "#${module.railswave_repository.repository_url}:latest"
-      cpu       = 256
-      memory    = 512
+      cpu       = 128
+      memory    = 128
       essential = true
       portMappings = [
         {
