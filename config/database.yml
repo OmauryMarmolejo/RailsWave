@@ -50,6 +50,8 @@ test:
 #
 production:
   <<: *default
-  database: rail_wave_production
-  username: rail_wave
-  password: <%= ENV["RAIL_WAVE_DATABASE_PASSWORD"] %>
+  database: <%= ENV["RAILS_DATABASE_NAME"] %>
+  host: <%= ENV["RAILS_DATABASE_HOST"] %>
+  username: <%= ENV["RAILS_DATABASE_USER"] %>
+  password: <%= ENV["RAIL_DATABASE_PASSWORD"] %>
+  port: 3306
