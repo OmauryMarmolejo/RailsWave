@@ -1,10 +1,15 @@
-<p style="color: green"><%= notice %></p>
+<div class="container mx-auto py-8">
+  <% if notice %>
+    <p class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"><%= notice %></p>
+  <% end %>
 
-<%= render @post %>
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <%= render @post %>
+  </div>
 
-<div>
-  <%= link_to "Edit this post", edit_post_path(@post) %> |
-  <%= link_to "Back to posts", posts_path %>
-
-  <%= button_to "Destroy this post", @post, method: :delete %>
+  <div class="flex justify-between">
+    <%= link_to "Edit this post", edit_post_path(@post), class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" %>
+    <%= link_to "Back to posts", posts_path, class: "inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2" %>
+    <%= button_to "Destroy this post", @post, method: :delete, class: "inline-block bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded", form: { data: { turbo_confirm: 'Are you sure?' } } %>
+  </div>
 </div>

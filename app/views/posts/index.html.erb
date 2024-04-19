@@ -1,14 +1,21 @@
-<p style="color: green"><%= notice %></p>
-
-<h1>Posts</h1>
-
-<div id="posts">
-  <% @posts.each do |post| %>
-    <%= render post %>
-    <p>
-      <%= link_to "Show this post", post %>
-    </p>
+<div class="container mx-auto py-8">
+  <% if notice %>
+    <p class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"><%= notice %></p>
   <% end %>
-</div>
 
-<%= link_to "New post", new_post_path %>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-4xl font-bold">Posts</h1>
+    <%= link_to "New Post", new_post_path, class: "inline-block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" %>
+  </div>
+
+  <div id="posts" class="space-y-4">
+    <% @posts.each do |post| %>
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <%= render post %>
+        <p class="mt-4">
+          <%= link_to "Show this post", post, class: "inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div>
