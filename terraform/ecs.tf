@@ -1,22 +1,64 @@
 resource "aws_ecs_cluster" "ecs_cluster" {
-  name = "my-ecs-cluster"
+  name = var.ecs_cluster_name
 }
 
 resource "aws_ecs_capacity_provider" "ecs_capacity_provider" {
-  name = "test1"
+  name = "capacity-provider-railswave"
 
   auto_scaling_group_provider {
     auto_scaling_group_arn = aws_autoscaling_group.ecs_asg.arn
     managed_scaling {
-      maximum_scaling_step_size = 1000
+      maximum_scaling_step_size = 3
       minimum_scaling_step_size = 1
       status                    = "ENABLED"
-      target_capacity           = 3
+      target_capacity           = 80
     }
   }
 }
 
-resource "aws_ecs_cluster_capacity_providers" "example" {
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name          = "ecs-cpu-high-railswave"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 75
+  alarm_description   = "This metric checks CPU utilization"
+  alarm_actions       = [aws_appautoscaling_policy.scale_up_policy.arn]
+  dimensions = {
+    ClusterName = aws_ecs_cluster.ecs_cluster.name
+    ServiceName = aws_ecs_service.ecs_service.name
+  }
+}
+
+resource "aws_appautoscaling_target" "scale_target" {
+  max_capacity       = 5
+  min_capacity       = 2
+  resource_id        = "service/${aws_ecs_cluster.ecs_cluster.name}/${aws_ecs_service.ecs_service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "scale_up_policy" {
+  name               = "scale-up"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.scale_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.scale_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.scale_target.service_namespace
+  step_scaling_policy_configuration {
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 300
+    metric_aggregation_type = "Average"
+    step_adjustment {
+      metric_interval_lower_bound = 0
+      scaling_adjustment          = 1
+    }
+  }
+}
+
+resource "aws_ecs_cluster_capacity_providers" "railswave" {
   cluster_name       = aws_ecs_cluster.ecs_cluster.name
   capacity_providers = [aws_ecs_capacity_provider.ecs_capacity_provider.name]
 
@@ -28,12 +70,9 @@ resource "aws_ecs_cluster_capacity_providers" "example" {
 }
 
 resource "aws_ecs_task_definition" "ecs_task_definition" {
-  #TODO: Remove task definition name from here
-  family             = "my-ecs-task"
-  network_mode       = "awsvpc"
+  family             = var.task_definition_name
+  network_mode       = "bridge"
   execution_role_arn = "arn:aws:iam::344974554678:role/ecsTaskExecutionRole"
-  cpu                = "512"
-  memory             = "1024"
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -41,15 +80,14 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
 
   container_definitions = jsonencode([
     {
-      name      = "dockergs"
-      image     = "#${module.railswave_repository.repository_url}:latest"
-      cpu       = 512
-      memory    = 1024
-      essential = true
+      name              = "dockergs"
+      image             = "${module.railswave_repository.repository_url}:latest"
+      cpu               = 128
+      memoryReservation = 128
+      essential         = true
       portMappings = [
         {
           containerPort = 3000
-          hostPort      = 3000
           protocol      = "tcp"
         }
       ]
@@ -78,21 +116,24 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           name  = "RAIL_DATABASE_PASSWORD"
           value = var.RAILS_DATABASE_PASSWORD
         }
-      ]
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app.name
+          "awslogs-region"        = "us-west-2"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
     }
   ])
 }
 
 resource "aws_ecs_service" "ecs_service" {
-  name            = "my-ecs-service"
+  name            = "ecs-service-railswave"
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
   desired_count   = 2
-
-  network_configuration {
-    subnets         = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
-    security_groups = [aws_security_group.security_group.id]
-  }
 
   force_new_deployment = true
   placement_constraints {
@@ -100,7 +141,7 @@ resource "aws_ecs_service" "ecs_service" {
   }
 
   triggers = {
-    redeployment = timestamp()
+    redeployment = plantimestamp()
   }
 
   capacity_provider_strategy {
