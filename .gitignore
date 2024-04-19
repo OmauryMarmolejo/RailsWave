@@ -68,3 +68,5 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+/app/assets/builds/*
+!/app/assets/builds/.keep
