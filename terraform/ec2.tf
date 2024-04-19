@@ -1,6 +1,6 @@
 resource "aws_launch_template" "ecs_lt" {
-  name_prefix   = "ecs-template"
-  image_id      = "ami-0395649fbe870727e"
+  name_prefix   = "ecs-template-railswave"
+  image_id      = data.aws_ami.amzn.image_id
   instance_type = "t3.micro"
 
   key_name               = "railswave-oregon"
@@ -24,11 +24,16 @@ resource "aws_launch_template" "ecs_lt" {
     }
   }
 
-  user_data = filebase64("${path.module}/ecs.sh")
+  user_data = base64encode(
+    <<-EOF
+    #!/bin/bash
+    echo ECS_CLUSTER=${var.ecs_cluster_name} >> /etc/ecs/ecs.config
+    EOF
+  )
 }
 
 resource "aws_autoscaling_group" "ecs_asg" {
-  vpc_zone_identifier = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+  vpc_zone_identifier = [var.public_subnet_id, aws_subnet.private.id]
   desired_capacity    = 2
   max_size            = 3
   min_size            = 1
@@ -46,14 +51,14 @@ resource "aws_autoscaling_group" "ecs_asg" {
 }
 
 resource "aws_lb" "ecs_lb" {
-  name               = "ecs-lb"
+  name               = "ecs-lb-railswave"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.security_group.id]
-  subnets            = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+  subnets            = [var.public_subnet_id, aws_subnet.private.id]
 
   tags = {
-    Name = "ecs-lb"
+    Name = "ecs-lb-railswave"
   }
 }
 
@@ -72,10 +77,16 @@ resource "aws_lb_target_group" "ecs_tg" {
   name        = "ecs-target-group"
   port        = 3000
   protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = aws_vpc.main.id
+  target_type = "instance"
+  vpc_id      = var.vpc_id
 
   health_check {
-    path = "/"
+    path                = "/up"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+    timeout             = 29
+    matcher             = "200-299"
+    protocol            = "HTTP"
   }
 }
