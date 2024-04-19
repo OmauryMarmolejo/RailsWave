@@ -33,3 +33,23 @@ variable "RAILS_DATABASE_PASSWORD" {
   description = "Rails database password"
   type        = string
 }
+
+variable "public_subnet_id" {
+  description = "Public subnet ID"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "VPC ID"
+  type        = string
+}
+
+variable "task_definition_name" {
+  description = "Task definition name"
+  type        = string
+}
+
+variable "ecs_cluster_name" {
+  description = "ECS cluster name"
+  type        = string
+}
